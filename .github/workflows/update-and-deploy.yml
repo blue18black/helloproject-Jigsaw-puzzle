@@ -1,0 +1,63 @@
+# 毎朝 helloproject.com から最新のリリース一覧を取り直し、GitHub Pages に公開する
+name: Update releases & deploy
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 毎日 06:00 (JST)
+  workflow_dispatch: # Actions タブから手動実行も可能
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # データ更新のコミット用
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch latest releases
+        id: fetch
+        # サイト側の一時的な不調で失敗しても、既存データのまま公開は続ける
+        continue-on-error: true
+        run: node scripts/fetch-releases.mjs
+
+      - name: Commit updated data
+        if: steps.fetch.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/releases.json
+          if git diff --cached --quiet; then
+            echo "リリースデータに変更なし"
+          else
+            git commit -m "chore: リリースデータを更新"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

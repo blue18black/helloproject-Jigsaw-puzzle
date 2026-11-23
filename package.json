@@ -1,0 +1,14 @@
+{
+  "name": "helloproject-jigsaw-puzzle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ハロプロのジャケ写で遊べる非公式ジグソーパズル",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "fetch-data": "node scripts/fetch-releases.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
